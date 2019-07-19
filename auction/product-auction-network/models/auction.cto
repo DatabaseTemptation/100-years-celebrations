@@ -1,0 +1,107 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * 物品拍卖数据模型
+ */
+namespace org.product.auction
+
+/* 待拍卖资产 */
+asset Product identified by productName {
+  o String productName  //物品名
+  --> Customer owner  //资产拥有者
+}
+
+/* 拍卖状态 */
+enum State {
+  o FOR_SALE  //待拍卖
+  o ENDED  //未成功结束
+  o SOLD  //成功售出
+}
+
+/* 顾客名字 */
+concept CustomerName {
+  o String nickName
+  o String realName
+}
+
+/* 本次拍卖 */
+asset AuctionList identified by auctionId {
+  o String auctionId  
+  o Double reservePrice default=0.00 //底价
+  o String detail optional  //本次拍卖描述
+  --> Product product //要拍卖的物品
+  --> Auctioneer auctioneer  //拍卖商
+  o State state default="FOR_SALE" //本次拍卖状态
+  o AuctionOffer[] offers optional  //不同的竞拍请求
+  o DateTime startTime //拍卖开始时间（创建时间），ISO格式
+}
+
+abstract participant Person identified by email {
+  o String email
+  o CustomerName customerName
+}
+
+participant Customer extends Person {
+  o Double balance default=0.00
+}
+
+/* 拍卖商 */
+participant Auctioneer extends Person {
+}
+
+transaction MakeAuctionList {
+  o Double reservePrice default=0.00  //底价
+  o String detail optional  //本次拍卖描述
+  --> Product product //要拍卖的物品
+  --> Auctioneer auctioneer  //拍卖商
+}
+
+/* 竞拍请求 */
+transaction AuctionOffer {
+  o Double bidPrice default=0.00 //拍卖价格
+  --> AuctionList auctionList  //所属拍卖清单
+  --> Customer member  //竞拍人
+}
+
+/* 结束本次拍卖 */
+transaction CloseBidding {
+  --> AuctionList auctionList  //要结束的拍卖
+}
+
+/* 顾客充值 */
+transaction Recharge {
+  o Double amount default=0.00
+  --> Customer customer
+}
+
+event AuctionFinishNotification {
+  --> AuctionList auctionList
+  o String detail
+}
+
+event OfferPostedNotification {
+  o AuctionOffer offer
+  o String detail
+}
+
+event RechargeNotification {
+  --> Customer customer
+  o String detail
+}
+
+event NewAuctionNotification {
+  --> AuctionList auctionList
+  o String detail
+}
